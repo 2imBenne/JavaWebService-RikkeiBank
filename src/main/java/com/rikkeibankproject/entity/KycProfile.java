@@ -27,6 +27,16 @@ public class KycProfile {
     @Column(nullable = false, unique = true)
     private String identityCard;
 
+    @Column(nullable = false)
+    private String frontCardUrl;
+
+    @Column(nullable = false)
+    private String backCardUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private KycStatus status;
+
     @OneToOne
     @JoinColumn(name = "user_id")
     @ToString.Exclude

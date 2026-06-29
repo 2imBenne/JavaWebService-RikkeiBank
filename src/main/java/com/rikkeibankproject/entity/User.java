@@ -30,4 +30,10 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @ToString.Exclude
     private KycProfile kycProfile;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isKyc;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean isActive = true;
 }

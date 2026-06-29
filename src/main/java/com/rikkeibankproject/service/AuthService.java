@@ -25,6 +25,15 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import com.rikkeibankproject.dto.request.RegisterRequest;
+import com.rikkeibankproject.entity.Account;
+import com.rikkeibankproject.entity.Role;
+import com.rikkeibankproject.repository.AccountRepository;
+import com.rikkeibankproject.repository.RoleRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.apache.commons.lang3.RandomStringUtils;
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -34,9 +43,46 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
     private final TokenBlackListRepository tokenBlackListRepository;
+    private final RoleRepository roleRepository;
+    private final AccountRepository accountRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Value("${app.jwt.refresh-token-expiration}")
     private long refreshExpirationDateInMs;
+
+    @Transactional
+    public void register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new CustomException("Username is already taken!", HttpStatus.BAD_REQUEST);
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new CustomException("Email Address already in use!", HttpStatus.BAD_REQUEST);
+        }
+
+        Role userRole = roleRepository.findByName("ROLE_CUSTOMER")
+                .orElseThrow(() -> new CustomException("User Role not set.", HttpStatus.INTERNAL_SERVER_ERROR));
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(userRole)
+                .isKyc(false)
+                .isActive(true)
+                .build();
+
+        user = userRepository.save(user);
+
+        // Auto create an account for the new user
+        Account account = Account.builder()
+                .accountNumber(RandomStringUtils.randomNumeric(10))
+                .balance(BigDecimal.ZERO)
+                .user(user)
+                .pinCode(passwordEncoder.encode("123456"))
+                .build();
+        accountRepository.save(account);
+    }
 
     @Transactional
     public TokenResponse login(LoginRequest loginRequest) {
@@ -122,5 +168,26 @@ public class AuthService {
                 tokenBlackListRepository.save(tokenBlackList);
             }
         }
+    }
+
+    @Transactional
+    public String forgotPassword(com.rikkeibankproject.dto.request.ForgotPasswordRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new CustomException("User not found", HttpStatus.NOT_FOUND));
+                
+        if (!user.getEmail().equals(request.getEmail())) {
+            throw new CustomException("Email does not match", HttpStatus.BAD_REQUEST);
+        }
+
+        if (user.getKycProfile() == null || !user.getKycProfile().getIdentityCard().equals(request.getIdentityCard())) {
+            throw new CustomException("Identity card does not match or KYC not completed", HttpStatus.BAD_REQUEST);
+        }
+        
+        // Generate new 8-character password
+        String newPassword = RandomStringUtils.randomAlphanumeric(8);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        return newPassword;
     }
 }

@@ -25,9 +25,17 @@ public class Transaction {
     private BigDecimal amount;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
+    @JoinColumn(name = "from_account_id")
     @ToString.Exclude
-    private Account account;
+    private Account fromAccount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "to_account_id")
+    @ToString.Exclude
+    private Account toAccount;
+
+    @Column(nullable = false)
+    private String description;
 
     @Column(nullable = false)
     private LocalDateTime timestamp;

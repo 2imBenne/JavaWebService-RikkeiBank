@@ -26,4 +26,7 @@ public class Account {
     @JoinColumn(name = "user_id")
     @ToString.Exclude
     private User user;
+
+    @Column(nullable = false)
+    private String pinCode;
 }

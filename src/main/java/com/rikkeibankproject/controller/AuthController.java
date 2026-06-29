@@ -10,12 +10,20 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.rikkeibankproject.dto.request.RegisterRequest;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.ok(ApiResponse.success(null, "User registered successfully"));
+    }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<TokenResponse>> login(@Valid @RequestBody LoginRequest request) {
@@ -33,5 +41,11 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String authorizationHeader) {
         authService.logout(authorizationHeader);
         return ResponseEntity.ok(ApiResponse.success(null, "Logout successful"));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody com.rikkeibankproject.dto.request.ForgotPasswordRequest request) {
+        String newPassword = authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(newPassword, "Password reset successfully. Your new password is in the data field."));
     }
 }
