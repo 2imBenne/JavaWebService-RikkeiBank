@@ -16,7 +16,6 @@ public class CloudinaryService {
     private Cloudinary cloudinary;
 
     public String uploadFile(MultipartFile file) throws IOException {
-        // Validate size (max 5MB)
         if (file.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("File size must not exceed 5MB");
         }
